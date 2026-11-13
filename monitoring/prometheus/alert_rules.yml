@@ -1,0 +1,57 @@
+groups:
+  - name: tradeops_alerts
+    rules:
+      - alert: ServiceDown
+        expr: tradeops_service_up == 0
+        for: 30s
+        labels:
+          severity: P1
+        annotations:
+          summary: "Monitored service is down: {{ $labels.service_name }}"
+          description: "Health probe for service {{ $labels.service_name }} failed consecutive checks."
+
+      - alert: DatabaseUnavailable
+        expr: tradeops_service_up{service_name="PostgreSQL Database"} == 0
+        for: 15s
+        labels:
+          severity: P1
+        annotations:
+          summary: "PostgreSQL Database connection unavailable"
+          description: "Database health probe failed to execute heartbeat query."
+
+      - alert: HighErrorRate
+        expr: (sum(rate(tradeops_http_errors_total[2m])) / sum(rate(tradeops_http_requests_total[2m]))) > 0.05
+        for: 1m
+        labels:
+          severity: P2
+        annotations:
+          summary: "High API Error Rate (> 5% 5xx errors)"
+          description: "TradeOps API error rate is above threshold in the last 2 minutes."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, sum(rate(tradeops_http_request_duration_seconds_bucket[2m])) by (le)) > 1.0
+        for: 1m
+        labels:
+          severity: P2
+        annotations:
+          summary: "High P95 API Latency (> 1.0s)"
+          description: "95th percentile request latency exceeds 1.0 second."
+
+      - alert: HighCPUUsage
+        expr: tradeops_system_cpu_percent > 85
+        for: 2m
+        labels:
+          severity: P3
+        annotations:
+          summary: "Host CPU utilization elevated (> 85%)"
+          description: "CPU usage sustained above 85% for over 2 minutes."
+
+      - alert: HighMemoryUsage
+        expr: tradeops_system_memory_percent > 90
+        for: 2m
+        labels:
+          severity: P3
+        annotations:
+          summary: "Host RAM utilization critical (> 90%)"
+          description: "Memory consumption sustained above 90%."
+
